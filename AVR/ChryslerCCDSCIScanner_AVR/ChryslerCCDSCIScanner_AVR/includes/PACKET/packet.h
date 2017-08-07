@@ -83,6 +83,7 @@
 
 // DC command 0x0E (debug)
 #define high_speed_sci_bus_dump			0x01
+#define debug_mcp23017					0x02
 
 // DC command 0x0F (OK/ERROR)
 #define ok										0x00

@@ -29,7 +29,7 @@
 //MCU definitions
 #ifndef F_CPU
 //#define F_CPU 1000000UL //1M CPU speed (for <util/delay.h>) 
-#define F_CPU  7372800UL //Atmega5815  7.3728MHz
+//#define F_CPU  7372800UL //Atmega5815  7.3728MHz
 //#define F_CPU 14745600UL //Atmega8    14.7456MHz
 #endif
 

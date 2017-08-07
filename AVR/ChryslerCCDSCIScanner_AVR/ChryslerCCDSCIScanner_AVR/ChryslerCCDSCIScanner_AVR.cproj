@@ -118,13 +118,13 @@
             <Value>..</Value>
             <Value>../includes</Value>
             <Value>../includes/UART</Value>
-            <Value>../includes/I2Cmaster</Value>
             <Value>../includes/MCP23017</Value>
             <Value>../includes/CCDSCI</Value>
             <Value>../includes/EXTEEPROM</Value>
             <Value>../includes/PACKET</Value>
             <Value>../includes/GLCD</Value>
             <Value>../includes/MILLIS</Value>
+            <Value>../includes/TWIlib</Value>
           </ListValues>
         </avrgcc.compiler.directories.IncludePaths>
         <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
@@ -159,19 +159,16 @@
     <Compile Include="includes\EXTEEPROM\exteeprom.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="includes\GLCD\arial_bold_14.h">
+    <Compile Include="includes\GLCD\arial_8.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="includes\GLCD\atmel_glcd.h">
+    <Compile Include="includes\GLCD\arial_bold_14.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\GLCD\chrysler_keyboard_01.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\GLCD\chrysler_logo_bmp.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="includes\GLCD\corsiva_12.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\GLCD\doge_wow.h">
@@ -181,9 +178,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\GLCD\font5x7.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="includes\GLCD\girl_1_glcd.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\GLCD\lcd_driver_KS0107.c">
@@ -196,12 +190,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\GLCD\lcd_graphics.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="includes\I2Cmaster\i2cmaster.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="includes\I2Cmaster\twimaster.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="includes\MCP23017\mcp23017.c">
@@ -222,6 +210,12 @@
     <Compile Include="includes\PACKET\packet.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="includes\TWIlib\TWIlib.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\TWIlib\TWIlib.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="includes\UART\uart.c">
       <SubType>compile</SubType>
     </Compile>
@@ -238,11 +232,11 @@
   <ItemGroup>
     <Folder Include="includes" />
     <Folder Include="includes\CCDSCI" />
-    <Folder Include="includes\I2Cmaster" />
     <Folder Include="includes\MCP23017" />
     <Folder Include="includes\EXTEEPROM" />
     <Folder Include="includes\GLCD" />
     <Folder Include="includes\MILLIS" />
+    <Folder Include="includes\TWIlib" />
     <Folder Include="includes\PACKET" />
     <Folder Include="includes\UART" />
   </ItemGroup>

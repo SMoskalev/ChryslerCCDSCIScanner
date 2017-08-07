@@ -56,7 +56,8 @@
 #include <util/delay.h>
 #include <inttypes.h>
 #include "exteeprom.h"
-#include "i2cmaster.h"
+//#include "i2cmaster.h"
+#include "TWIlib.h"
 
 // Initializer
 // - deviceCapacity is the capacity of a single EEPROM device in
@@ -99,10 +100,10 @@ void exteeprom_init(uint16_t deviceCapacity, uint8_t nDevice, uint16_t pageSize,
 //calls for the other devices to ensure the intended I2C clock speed is set.
 uint8_t exteeprom_begin()
 {
-    i2c_start_wait(_eepromAddr + I2C_WRITE);
-    if (_nAddrBytes == 2) i2c_write(0);      //high addr byte
-    i2c_write(0);                            //low addr byte
-    return i2c_readNak();
+    //i2c_start_wait(_eepromAddr + I2C_WRITE);
+    //if (_nAddrBytes == 2) i2c_write(0);      //high addr byte
+    //i2c_write(0);                            //low addr byte
+    //return i2c_readNak();
 }
 
 //Write bytes to external EEPROM.
@@ -111,48 +112,48 @@ uint8_t exteeprom_begin()
 //from the Arduino Wire library is passed back through to the caller.
 uint8_t exteeprom_write_bytes(uint32_t addr, uint8_t *values, uint16_t nBytes)
 {
-    uint8_t ctrlByte;       //control byte (I2C device address & chip/block select bits)
-    uint8_t txStatus = 0;   //transmit status
-    uint16_t nWrite;        //number of bytes to write
-    uint16_t nPage;         //number of bytes remaining on current page, starting at addr
-
-    if (addr + nBytes > _totalCapacity) {   //will this write go past the top of the EEPROM?
-        return EEPROM_ADDR_ERR;             //yes, tell the caller
-    }
-
-    while (nBytes > 0)
-	{
-        nPage = _pageSize - ( addr & (_pageSize - 1) );
-        //find min(nBytes, nPage, BUFFER_LENGTH) -- BUFFER_LENGTH is defined in the Wire library.
-        nWrite = nBytes < nPage ? nBytes : nPage;
-        nWrite = BUFFER_LENGTH - _nAddrBytes < nWrite ? BUFFER_LENGTH - _nAddrBytes : nWrite;
-        ctrlByte = _eepromAddr | (uint8_t) (addr >> _csShift);
-        i2c_start(ctrlByte);
-        if (_nAddrBytes == 2) i2c_write( (uint8_t) (addr >> 8) );   //high addr byte
-        i2c_write( (uint8_t) addr );                                //low addr byte
-		for (uint8_t i = 0; i < nWrite; i++) i2c_write(*values);
-        txStatus = i2c_readNak();
-		i2c_stop();
-
-        if (txStatus != 0) return txStatus;
-
-        //wait up to 50ms for the write to complete
-        for (uint8_t i=100; i; --i) {
-            _delay_us(500);                     //no point in waiting too fast
-            i2c_start(ctrlByte);
-            if (_nAddrBytes == 2) i2c_write(0);        //high addr byte
-            i2c_write(0);                              //low addr byte
-            txStatus = i2c_readNak();
-			i2c_stop();
-            if (txStatus == 0) break;
-        }
-        if (txStatus != 0) return txStatus;
-
-        addr += nWrite;         //increment the EEPROM address
-        values += nWrite;       //increment the input data pointer
-        nBytes -= nWrite;       //decrement the number of bytes left to write
-    }
-    return txStatus;
+    //uint8_t ctrlByte;       //control byte (I2C device address & chip/block select bits)
+    //uint8_t txStatus = 0;   //transmit status
+    //uint16_t nWrite;        //number of bytes to write
+    //uint16_t nPage;         //number of bytes remaining on current page, starting at addr
+//
+    //if (addr + nBytes > _totalCapacity) {   //will this write go past the top of the EEPROM?
+        //return EEPROM_ADDR_ERR;             //yes, tell the caller
+    //}
+//
+    //while (nBytes > 0)
+	//{
+        //nPage = _pageSize - ( addr & (_pageSize - 1) );
+        ////find min(nBytes, nPage, BUFFER_LENGTH) -- BUFFER_LENGTH is defined in the Wire library.
+        //nWrite = nBytes < nPage ? nBytes : nPage;
+        //nWrite = BUFFER_LENGTH - _nAddrBytes < nWrite ? BUFFER_LENGTH - _nAddrBytes : nWrite;
+        //ctrlByte = _eepromAddr | (uint8_t) (addr >> _csShift);
+        //i2c_start(ctrlByte);
+        //if (_nAddrBytes == 2) i2c_write( (uint8_t) (addr >> 8) );   //high addr byte
+        //i2c_write( (uint8_t) addr );                                //low addr byte
+		//for (uint8_t i = 0; i < nWrite; i++) i2c_write(*values);
+        //txStatus = i2c_readNak();
+		//i2c_stop();
+//
+        //if (txStatus != 0) return txStatus;
+//
+        ////wait up to 50ms for the write to complete
+        //for (uint8_t i=100; i; --i) {
+            //_delay_us(500);                     //no point in waiting too fast
+            //i2c_start(ctrlByte);
+            //if (_nAddrBytes == 2) i2c_write(0);        //high addr byte
+            //i2c_write(0);                              //low addr byte
+            //txStatus = i2c_readNak();
+			//i2c_stop();
+            //if (txStatus == 0) break;
+        //}
+        //if (txStatus != 0) return txStatus;
+//
+        //addr += nWrite;         //increment the EEPROM address
+        //values += nWrite;       //increment the input data pointer
+        //nBytes -= nWrite;       //decrement the number of bytes left to write
+    //}
+    //return txStatus;
 }
 
 //Read bytes from external EEPROM.
@@ -161,36 +162,36 @@ uint8_t exteeprom_write_bytes(uint32_t addr, uint8_t *values, uint16_t nBytes)
 //from the Arduino Wire library is passed back through to the caller.
 uint8_t exteeprom_read_bytes(uint32_t addr, uint8_t *values, uint16_t nBytes)
 {
-    uint8_t ctrlByte;
-    uint8_t rxStatus;
-    uint16_t nRead;             //number of bytes to read
-    uint16_t nPage;             //number of bytes remaining on current page, starting at addr
-
-    if (addr + nBytes > _totalCapacity) {   //will this read take us past the top of the EEPROM?
-        return EEPROM_ADDR_ERR;             //yes, tell the caller
-    }
-
-    while (nBytes > 0) {
-        nPage = _pageSize - ( addr & (_pageSize - 1) );
-        nRead = nBytes < nPage ? nBytes : nPage;
-        nRead = BUFFER_LENGTH < nRead ? BUFFER_LENGTH : nRead;
-        ctrlByte = _eepromAddr | (uint8_t) (addr >> _csShift);
-        i2c_start(ctrlByte);
-        if (_nAddrBytes == 2) i2c_write( (uint8_t) (addr >> 8) );   //high addr byte
-        i2c_write( (uint8_t) addr );                                //low addr byte
-        rxStatus = i2c_readAck();
-		
-        if (rxStatus != 0) return rxStatus;        //read error
-		
-        //Wire.requestFrom(ctrlByte, nRead);
-        for (uint8_t i=0; i<nRead; i++) values[i] = i2c_readAck();
-
-        addr += nRead;          //increment the EEPROM address
-        values += nRead;        //increment the input data pointer
-        nBytes -= nRead;        //decrement the number of bytes left to write
-    }
-	i2c_stop();
-    return 0;
+    //uint8_t ctrlByte;
+    //uint8_t rxStatus;
+    //uint16_t nRead;             //number of bytes to read
+    //uint16_t nPage;             //number of bytes remaining on current page, starting at addr
+//
+    //if (addr + nBytes > _totalCapacity) {   //will this read take us past the top of the EEPROM?
+        //return EEPROM_ADDR_ERR;             //yes, tell the caller
+    //}
+//
+    //while (nBytes > 0) {
+        //nPage = _pageSize - ( addr & (_pageSize - 1) );
+        //nRead = nBytes < nPage ? nBytes : nPage;
+        //nRead = BUFFER_LENGTH < nRead ? BUFFER_LENGTH : nRead;
+        //ctrlByte = _eepromAddr | (uint8_t) (addr >> _csShift);
+        //i2c_start(ctrlByte);
+        //if (_nAddrBytes == 2) i2c_write( (uint8_t) (addr >> 8) );   //high addr byte
+        //i2c_write( (uint8_t) addr );                                //low addr byte
+        //rxStatus = i2c_readAck();
+		//
+        //if (rxStatus != 0) return rxStatus;        //read error
+		//
+        ////Wire.requestFrom(ctrlByte, nRead);
+        //for (uint8_t i=0; i<nRead; i++) values[i] = i2c_readAck();
+//
+        //addr += nRead;          //increment the EEPROM address
+        //values += nRead;        //increment the input data pointer
+        //nBytes -= nRead;        //decrement the number of bytes left to write
+    //}
+	//i2c_stop();
+    //return 0;
 }
 
 //Write a single byte to external EEPROM.

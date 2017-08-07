@@ -1,70 +1,71 @@
-/*
- * mcp23017.c
- *
- * Created: 12/23/2011 5:40:33 PM
- *  Author: Owner
- */ 
-
 #include "mcp23017.h"
-#include "i2cmaster.h"
+#include "TWIlib.h"
 #include <util/delay.h>
 
 #define MCP23017_BASE_ADDRESS 0x20 // default address when all three address pins are grounded on the chip
+#define MCP23017_READ_ADDRESS  (MCP23017_BASE_ADDRESS << 1) | 0x01 // address shifted and last bit set
+#define MCP23017_WRITE_ADDRESS (MCP23017_BASE_ADDRESS << 1) & 0xFE // address shifted and last bit cleared
 
-void mcp23017_init(MCP23017 *obj, uint8_t address)
+void mcp23017_init(void)
 {
-	obj->address = MCP23017_BASE_ADDRESS + address;
+	mcp23017_write_register(MCP23017_IODIRA,   0xFF);	// Set all pins to input
+	mcp23017_write_register(MCP23017_IODIRB,   0xFF);	// Set all pins to input
+	mcp23017_write_register(MCP23017_GPPUA,    0xFF);	// Set 100k pullup on all pins
+	mcp23017_write_register(MCP23017_GPPUB,    0xFF);	// Set 100k pullup on all pins
+	mcp23017_write_register(MCP23017_IPOLA,    0xFF);	// Invert polarity of button signal, if taken to ground, GPIO shows logical 1
+	mcp23017_write_register(MCP23017_IPOLB,    0xFF);	// Invert polarity of button signal, if taken to ground, GPIO shows logical 1
+	mcp23017_write_register(MCP23017_IOCONA,   0x60);	// Configure the interrupt system (mirror INTA/B, INTA/B not floating, interrupt signaled with LOW) 
+	mcp23017_write_register(MCP23017_IOCONB,   0x60);	// Configure the interrupt system (mirror INTA/B, INTA/B not floating, interrupt signaled with LOW) 
+	//mcp23017_write_register(MCP23017_DEFVALA,  0xFF);	// Default value of pins
+	//mcp23017_write_register(MCP23017_DEFVALB,  0xFF);	// Default value of pins
+	//mcp23017_write_register(MCP23017_INTCONA,  0xFF);	// Compare interrupt to the default value
+	//mcp23017_write_register(MCP23017_INTCONB,  0xFF);	// Compare interrupt to the default value
+	mcp23017_write_register(MCP23017_GPINTENA, 0xFF);	// Enable interrupts on all pins
+	mcp23017_write_register(MCP23017_GPINTENB, 0xFF);	// Enable interrupts on all pins
+}
+
+void mcp23017_write_register(uint8_t reg, uint8_t data)
+{
+	uint8_t temp[3];
+	temp[0] = MCP23017_WRITE_ADDRESS;
+	temp[1] = reg;
+	temp[2] = data;
+
+	// Set the error code to have no relevant information
+	TWIInfo.errorCode = TWI_NO_RELEVANT_INFO;
+	// Continuously attempt to transmit data until a successful transmission occurs
+	while (TWIInfo.errorCode != 0xFF)
+	{
+		TWITransmitData(temp, 3, 0);
+	}
+}
+
+uint8_t mcp23017_read_register(uint8_t reg)
+{
+	uint8_t temp[2];
+	temp[0] = MCP23017_WRITE_ADDRESS;
+	temp[1] = reg;
+
+	// Set the error code to have no relevant information
+	TWIInfo.errorCode = TWI_NO_RELEVANT_INFO;
+	// Continuously attempt to transmit data until a successful transmission occurs
+	while (TWIInfo.errorCode != 0xFF)
+	{
+		TWITransmitData(temp, 2, 1);
+	}
+
+	// Now that the data has been written, another write operation is required to set the
+	// address to read from. A Repeated START is used to maintain control of the bus.
+	// This is important as if another Master takes control of the EEPROM and changes its address
+	// before we get to read the data, then data will be read from the wrong address
 	
-	mcp23017_write_register(obj, MCP23017_IOCON, 0x00); // Set addressing style
-	
-	obj->data = 0xFFFF;
-	mcp23017_write_word(obj, MCP23017_IODIRA);	// Set all pins to input
+	TWIInfo.errorCode = TWI_NO_RELEVANT_INFO;
+	while (TWIInfo.errorCode != 0xFF)
+	{
+		TWIReadData(MCP23017_BASE_ADDRESS, 1, 0); // the read-bit is added inside the function!
+	}
 
-	obj->data = 0xFFFF;
-	mcp23017_write_word(obj, MCP23017_GPPUA);	// Set 100k pullup on all pins
+	while (isTWIReady() == 0) {_delay_ms(1);}
 
-	//obj->data = 0xFFFF;
-	//mcp23017_write_word(obj, MCP23017_IPOLA);	// Invert polarity of button signal, if taken to ground, GPIO shows logical 1
-
-	obj->data = 0x6060;
-	mcp23017_write_word(obj, MCP23017_IOCON);   // Configure the interrupt system (mirror INTA/B, INTA/B not floating, interrupt signaled with LOW) 
-
-	//obj->data = 0xFFFF;
-	//mcp23017_write_word(obj, MCP23017_INTCONA); // Compare interrupt to the default value
-	
-	obj->data = 0xFFFF;
-	mcp23017_write_word(obj, MCP23017_GPINTENA); // Enable interrupts on all pins
-
-}
-void mcp23017_write(MCP23017 *obj)
-{
-	mcp23017_write_word(obj,MCP23017_GPIOA);
-}
-
-void mcp23017_write_register( MCP23017 *obj, uint8_t reg, uint8_t data)
-{
-	i2c_start_wait(obj->address + I2C_WRITE);
-	i2c_write(reg);
-	i2c_write(data);
-	i2c_stop();
-}
-
-uint8_t mcp23017_read_register( MCP23017 *obj, uint8_t reg)
-{
-	i2c_start_wait(obj->address + I2C_WRITE);
-	i2c_write( reg );
-	i2c_rep_start( obj->address + I2C_READ);
-	uint8_t data = i2c_readNak();
-	i2c_stop();
-	return data;
-}
-
-void mcp23017_write_word( MCP23017 *obj, uint8_t reg )
-{
-	i2c_start_wait(obj->address + I2C_WRITE);
-	i2c_write(reg);
-	uint16_t data = obj->data;		//	access our object's 16 bits of data
-	i2c_write((uint8_t)data);		//	cast and write the lower byte
-	i2c_write((uint8_t)(data>>8));	//	automatically adv address pointer and write upper
-	i2c_stop();
+	return TWIReceiveBuffer[0];
 }
